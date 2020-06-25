@@ -24,5 +24,11 @@
     <None Include="res\basic_shaders\vert.shader" />
     <None Include="res\shaders\frag.shader" />
     <None Include="res\shaders\vert.shader" />
+    <None Include="res\lua\test.lua" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\luaFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

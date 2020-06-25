@@ -76,13 +76,13 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)engine\dep\glm-0.9.9.8\glm</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)engine\dep\glm-0.9.9.8\glm;$(SolutionDir)engine\dep\lua-5.3.3</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GLEW_STATIC;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>glew32s.lib;glfw3.lib;opengl32.lib;User32.lib;Gdi32.lib;Shell32.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\lib\Release\Win32;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\lib-vc2015</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua5.1.lib;glew32s.lib;glfw3.lib;opengl32.lib;User32.lib;Gdi32.lib;Shell32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\lib\Release\Win32;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)engine\dep\lua-5.3.3</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -91,13 +91,13 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)engine\dep\glm-0.9.9.8\glm</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)engine\dep\glm-0.9.9.8\glm;$(SolutionDir)engine\dep\lua-5.3.3</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GLEW_STATIC;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>glew32s.lib;glfw3.lib;opengl32.lib;User32.lib;Gdi32.lib;Shell32.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\lib\Release\Win32;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\lib-vc2015</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua5.1.lib;glew32s.lib;glfw3.lib;opengl32.lib;User32.lib;Gdi32.lib;Shell32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\lib\Release\Win32;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)engine\dep\lua-5.3.3</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -108,15 +108,15 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)engine\dep\glm-0.9.9.8\glm</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)engine\dep\glm-0.9.9.8\glm;$(SolutionDir)engine\dep\lua-5.3.3</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GLEW_STATIC;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>glew32s.lib;glfw3.lib;opengl32.lib;User32.lib;Gdi32.lib;Shell32.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\lib\Release\Win32;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\lib-vc2015</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua5.1.lib;glew32s.lib;glfw3.lib;opengl32.lib;User32.lib;Gdi32.lib;Shell32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\lib\Release\Win32;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)engine\dep\lua-5.3.3</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -127,15 +127,15 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)engine\dep\glm-0.9.9.8\glm</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);src;$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\include;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)engine\dep\glm-0.9.9.8\glm;$(SolutionDir)engine\dep\lua-5.3.3</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GLEW_STATIC;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>glew32s.lib;glfw3.lib;opengl32.lib;User32.lib;Gdi32.lib;Shell32.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\lib\Release\Win32;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\lib-vc2015</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua5.1.lib;glew32s.lib;glfw3.lib;opengl32.lib;User32.lib;Gdi32.lib;Shell32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)engine\dep\glew-2.1.0-win32\glew-2.1.0\lib\Release\Win32;$(SolutionDir)engine\dep\glfw-3.2.1.bin.WIN32\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)engine\dep\lua-5.3.3</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -146,6 +146,10 @@
     <None Include="res\shaders\vert.shader" />
     <None Include="res\basic_shaders\frag.shader" />
     <None Include="res\basic_shaders\vert.shader" />
+    <None Include="res\lua\test.lua" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\luaFunctions.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

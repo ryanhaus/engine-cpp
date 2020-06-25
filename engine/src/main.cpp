@@ -2,13 +2,20 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <map>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <chrono>
 
-//#define DEBUG
+extern "C"
+{
+	#include <luaFunctions.h>
+}
+
+
+#define DEBUG
 
 #ifdef DEBUG
 #include <iostream>
@@ -50,6 +57,13 @@ ModelData parseObj(std::string file);
 void DrawCallModel(Model model, unsigned int program, glm::mat4 view, glm::mat4 projection);
 
 void fbSizeCallback(GLFWwindow* window, int width, int height);
+
+std::map<int, Model> render;
+int nextRenderId = 0;
+
+glm::vec3 cameraPos(0, 0, 0);
+glm::vec3 cameraRot(0, 0, 0);
+glm::vec3 lightPosition(6, -12, 18);
 
 int main()
 {
@@ -126,10 +140,6 @@ int main()
 		glDeleteShader(vertexShader);
 		glDeleteShader(fragmentShader);
 
-		glm::vec3 cameraPos(0, 0, 10);
-		glm::vec3 cameraRot(0, 0, 0);
-		glm::vec3 lightPosition(6, -12, 18);
-
 		float deltaSeconds = 0.0f;
 
 		double previousCursorX, previousCursorY;
@@ -140,13 +150,21 @@ int main()
 
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-		Model dragon = createModelFromFile("res/3d/dragon.obj", OBJ);
-		dragon.position.y = -5.0f;
-		dragon.color = glm::vec3(0.25f, 0.25f, 0.9f);
+		lua_State* Lua = luaL_newstate();
+		luaL_openlibs(Lua);
 
-		Model baseplate = createModelFromFile("res/3d/cube.obj", OBJ);
-		baseplate.position.y = -5.5f;
-		baseplate.size = glm::vec3(7.5f, 0.5f, 7.5f);
+		lua_register(Lua, "createPart", render_makePart);
+
+		lua_register(Lua, "setPosition", movePart);
+		lua_register(Lua, "setRotation", rotatePart);
+		lua_register(Lua, "setSize", resizePart);
+
+		lua_register(Lua, "setColor", recolorPart);
+
+		lua_register(Lua, "setCameraPosition", moveCamera);
+		lua_register(Lua, "setCameraRotation", rotateCamera);
+
+		luaL_dofile(Lua, "res/lua/test.lua");
 
 		while (!glfwWindowShouldClose(window))
 		{
@@ -199,6 +217,9 @@ int main()
 					cameraPos += glm::vec3(cos(cameraRot.y) * deltaSeconds * -speed, 0, sin(cameraRot.y) * deltaSeconds * -speed);
 			}
 
+			lua_getglobal(Lua, "tick");
+			lua_call(Lua, 0, 0);
+
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glUseProgram(program);
 
@@ -214,14 +235,10 @@ int main()
 
 			glUniform3fv(glGetUniformLocation(program, "vPos"), 1, &cameraRot[0]);
 			glUniform3fv(glGetUniformLocation(program, "lPos"), 1, &lightPosition[0]);
-
-			{
-				dragon.orientation.y += deltaSeconds / 4.0f;
-				baseplate.orientation.y += deltaSeconds / 4.0f;
-			}
-
-			DrawCallModel(dragon, program, view, projection);
-			DrawCallModel(baseplate, program, view, projection);
+			
+			std::map<int, Model>::iterator it;
+			for(it = render.begin(); it != render.end(); it++)
+				DrawCallModel(it->second, program, view, projection);
 
 			glfwSwapBuffers(window);
 
@@ -230,6 +247,7 @@ int main()
 			deltaSeconds = float(std::chrono::duration_cast<std::chrono::milliseconds>(s-f).count()) / -1000.0f * (float)asin(1);
 		}
 
+		lua_close(Lua);
 		glDeleteProgram(program);
 	}
 
@@ -353,4 +371,48 @@ void DrawCallModel(Model model, unsigned int program, glm::mat4 view, glm::mat4 
 void fbSizeCallback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
+}
+
+int render_makePart(lua_State* Lua)
+{
+	int id = ++nextRenderId;
+	render[id] = createModelFromFile(lua_tostring(Lua, 1), OBJ);
+	lua_pushinteger(Lua, id);
+	return 1;
+}
+
+int movePart(lua_State* Lua)
+{
+	render[lua_tointeger(Lua, 1)].position = glm::vec3(lua_tonumber(Lua, 2), lua_tonumber(Lua, 3), lua_tonumber(Lua, 4));
+	return 0;
+}
+
+int resizePart(lua_State* Lua)
+{
+	render[lua_tointeger(Lua, 1)].size = glm::vec3(lua_tonumber(Lua, 2), lua_tonumber(Lua, 3), lua_tonumber(Lua, 4));
+	return 0;
+}
+
+int rotatePart(lua_State* Lua)
+{
+	render[lua_tointeger(Lua, 1)].orientation = glm::vec3(lua_tonumber(Lua, 2), lua_tonumber(Lua, 3), lua_tonumber(Lua, 4));
+	return 0;
+}
+
+int recolorPart(lua_State* Lua)
+{
+	render[lua_tointeger(Lua, 1)].color = glm::vec3(lua_tonumber(Lua, 2), lua_tonumber(Lua, 3), lua_tonumber(Lua, 4));
+	return 0;
+}
+
+int moveCamera(lua_State* Lua)
+{
+	cameraPos = glm::vec3(lua_tonumber(Lua, 1), lua_tonumber(Lua, 2), lua_tonumber(Lua, 3));
+	return 0;
+}
+
+int rotateCamera(lua_State* Lua)
+{
+	cameraRot = glm::vec3(lua_tonumber(Lua, 1), lua_tonumber(Lua, 2), lua_tonumber(Lua, 3));
+	return 0;
 }
