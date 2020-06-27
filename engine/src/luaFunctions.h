@@ -13,3 +13,9 @@ int recolorPart(lua_State* Lua);
 
 int moveCamera(lua_State* Lua);
 int rotateCamera(lua_State* Lua);
+
+int getKeyDown(lua_State* Lua);
+int getMouseButtonDown(lua_State* Lua);
+int getMousePosition(lua_State* Lua);
+int setMousePosition(lua_State* Lua);
+int setCursorState(lua_State* Lua);

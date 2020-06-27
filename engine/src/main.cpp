@@ -7,7 +7,6 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <chrono>
 
 extern "C"
 {
@@ -65,10 +64,12 @@ glm::vec3 cameraPos(0, 0, 0);
 glm::vec3 cameraRot(0, 0, 0);
 glm::vec3 lightPosition(6, -12, 18);
 
+GLFWwindow* window;
+
 int main()
 {
 	glfwInit();
-	GLFWwindow* window = glfwCreateWindow(1080, 720, "Game", NULL, NULL);
+	window = glfwCreateWindow(1080, 720, "Game", NULL, NULL);
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
 
@@ -140,8 +141,6 @@ int main()
 		glDeleteShader(vertexShader);
 		glDeleteShader(fragmentShader);
 
-		float deltaSeconds = 0.0f;
-
 		double previousCursorX, previousCursorY;
 		glfwGetCursorPos(window, &previousCursorX, &previousCursorY);
 		double throwMouseToX, throwMouseToY;
@@ -164,58 +163,17 @@ int main()
 		lua_register(Lua, "setCameraPosition", moveCamera);
 		lua_register(Lua, "setCameraRotation", rotateCamera);
 
+		lua_register(Lua, "getKeyDown", getKeyDown);
+		lua_register(Lua, "getMouseButtonDown", getMouseButtonDown);
+		lua_register(Lua, "setMousePosition", setMousePosition);
+		lua_register(Lua, "getMousePosition", getMousePosition);
+		lua_register(Lua, "setCursorState", setCursorState);
+
 		luaL_dofile(Lua, "res/lua/test.lua");
 
 		while (!glfwWindowShouldClose(window))
 		{
 			glfwPollEvents();
-
-			auto s = std::chrono::high_resolution_clock::now();
-
-			{
-				double camDiv = 750;
-				double cursorX, cursorY;
-				glfwGetCursorPos(window, &cursorX, &cursorY);
-
-				double deltaCursorX = cursorX - previousCursorX;
-				double deltaCursorY = cursorY - previousCursorY;
-
-				previousCursorX = cursorX;
-				previousCursorY = cursorY;
-
-				if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) && !lastFrameMouseRtClick)
-				{
-					glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-					glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-					throwMouseToX = cursorX;
-					throwMouseToY = cursorY;
-				}
-
-				if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) && lastFrameMouseRtClick)
-				{
-					glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-					glfwSetCursorPos(window, throwMouseToX, throwMouseToY);
-				}
-
-				if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT))
-					cameraRot += glm::vec3(deltaCursorY / camDiv, deltaCursorX / camDiv, 0);
-
-				lastFrameMouseRtClick = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
-
-				if (cameraRot.x > asin(1)) cameraRot.x = (float)asin(1);
-				if (cameraRot.x < asin(-1)) cameraRot.x = (float)asin(-1);
-
-				float speed = -8.0f;
-
-				if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-					cameraPos += glm::vec3(cos(cameraRot.y + asin(1)) * deltaSeconds * speed, 0, sin(cameraRot.y + asin(1)) * deltaSeconds * speed);
-				if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-					cameraPos += glm::vec3(cos(cameraRot.y + asin(1)) * deltaSeconds * -speed, 0, sin(cameraRot.y + asin(1)) * deltaSeconds * -speed);
-				if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-					cameraPos += glm::vec3(cos(cameraRot.y) * deltaSeconds  * speed, 0, sin(cameraRot.y) * deltaSeconds * speed);
-				if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-					cameraPos += glm::vec3(cos(cameraRot.y) * deltaSeconds * -speed, 0, sin(cameraRot.y) * deltaSeconds * -speed);
-			}
 
 			lua_getglobal(Lua, "tick");
 			lua_call(Lua, 0, 0);
@@ -241,10 +199,6 @@ int main()
 				DrawCallModel(it->second, program, view, projection);
 
 			glfwSwapBuffers(window);
-
-			auto f = std::chrono::high_resolution_clock::now();
-
-			deltaSeconds = float(std::chrono::duration_cast<std::chrono::milliseconds>(s-f).count()) / -1000.0f * (float)asin(1);
 		}
 
 		lua_close(Lua);
@@ -414,5 +368,41 @@ int moveCamera(lua_State* Lua)
 int rotateCamera(lua_State* Lua)
 {
 	cameraRot = glm::vec3(lua_tonumber(Lua, 1), lua_tonumber(Lua, 2), lua_tonumber(Lua, 3));
+	return 0;
+}
+
+int getKeyDown(lua_State* Lua)
+{
+	lua_pushboolean(Lua, GLFW_PRESS == glfwGetKey(window, lua_tointeger(Lua, 1)));
+	return 1;
+}
+
+int getMouseButtonDown(lua_State* Lua)
+{
+	lua_pushboolean(Lua, glfwGetMouseButton(window, lua_tointeger(Lua, 1)));
+	return 1;
+}
+
+int getMousePosition(lua_State* Lua)
+{
+	double x, y;
+	glfwGetCursorPos(window, &x, &y);
+	lua_newtable(Lua);
+	lua_pushnumber(Lua, x);
+	lua_setfield(Lua, -2, "x");
+	lua_pushnumber(Lua, y);
+	lua_setfield(Lua, -2, "y");
+	return 1;
+}
+
+int setMousePosition(lua_State* Lua)
+{
+	glfwSetCursorPos(window, lua_tonumber(Lua, 1), lua_tonumber(Lua, 2));
+	return 0;
+}
+
+int setCursorState(lua_State* Lua)
+{
+	glfwSetInputMode(window, GLFW_CURSOR, lua_tointeger(Lua, 1));
 	return 0;
 }
