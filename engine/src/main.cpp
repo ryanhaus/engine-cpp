@@ -56,6 +56,7 @@ ModelData parseObj(std::string file);
 void DrawCallModel(Model model, unsigned int program, glm::mat4 view, glm::mat4 projection);
 
 void fbSizeCallback(GLFWwindow* window, int width, int height);
+void scrollCallback(GLFWwindow* window, double xoff, double yoff);
 
 std::map<int, Model> render;
 int nextRenderId = 0;
@@ -65,6 +66,7 @@ glm::vec3 cameraRot(0, 0, 0);
 glm::vec3 lightPosition(6, -12, 18);
 
 GLFWwindow* window;
+lua_State* Lua;
 
 int main()
 {
@@ -149,7 +151,7 @@ int main()
 
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-		lua_State* Lua = luaL_newstate();
+		Lua = luaL_newstate();
 		luaL_openlibs(Lua);
 
 		lua_register(Lua, "createPart", render_makePart);
@@ -168,6 +170,8 @@ int main()
 		lua_register(Lua, "setMousePosition", setMousePosition);
 		lua_register(Lua, "getMousePosition", getMousePosition);
 		lua_register(Lua, "setCursorState", setCursorState);
+
+		glfwSetScrollCallback(window, scrollCallback);
 
 		luaL_dofile(Lua, "res/lua/test.lua");
 
@@ -325,6 +329,15 @@ void DrawCallModel(Model model, unsigned int program, glm::mat4 view, glm::mat4 
 void fbSizeCallback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
+}
+
+void scrollCallback(GLFWwindow* window, double xoff, double yoff)
+{
+
+	lua_getglobal(Lua, "scrollWheelCallback");
+	lua_pushnumber(Lua, xoff);
+	lua_pushnumber(Lua, yoff);
+	lua_pcall(Lua, 2, 0, 0);
 }
 
 int render_makePart(lua_State* Lua)
