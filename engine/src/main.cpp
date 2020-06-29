@@ -63,7 +63,7 @@ int nextRenderId = 0;
 
 glm::vec3 cameraPos(0, 0, 0);
 glm::vec3 cameraRot(0, 0, 0);
-glm::vec3 lightPosition(6, -12, 18);
+glm::vec3 lightPosition(-0.5f, -0.5f, -0.5f);
 
 GLFWwindow* window;
 lua_State* Lua;
@@ -316,8 +316,14 @@ void DrawCallModel(Model model, unsigned int program, glm::mat4 view, glm::mat4 
 	modelMat = glm::scale(modelMat, model.size);
 	glm::mat4 mvp = projection * view * modelMat;
 
+	glm::mat4 normalMat = glm::mat4(1.0f);
+	normalMat = glm::rotate(normalMat, model.orientation.x, glm::vec3(1, 0, 0));
+	normalMat = glm::rotate(normalMat, model.orientation.y, glm::vec3(0, 1, 0));
+	normalMat = glm::rotate(normalMat, model.orientation.z, glm::vec3(0, 0, 1));
+
 	glUniformMatrix4fv(glGetUniformLocation(program, "mvp"), 1, GL_FALSE, &mvp[0][0]);
 	glUniformMatrix4fv(glGetUniformLocation(program, "modelMat"), 1, GL_FALSE, &modelMat[0][0]);
+	glUniformMatrix4fv(glGetUniformLocation(program, "normalMat"), 1, GL_FALSE, &normalMat[0][0]);
 	glUniform3fv(glGetUniformLocation(program, "objectColor"), 1, &model.color[0]);
 
 	glBindVertexArray(model.vao);

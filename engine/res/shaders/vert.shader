@@ -3,18 +3,17 @@
 layout(location = 0) in vec3 pos;
 layout(location = 2) in vec3 v_normal;
 
-out vec3 normal;
-out vec3 fPos;
-out vec3 lPos;
-out vec3 objectColor;
+out float diff;
 
+uniform vec3 lPos;
 uniform mat4 mvp;
 uniform mat4 modelMat;
+uniform mat4 normalMat;
 
 void main()
 {
-	normal = (modelMat * vec4(v_normal, 1.0)).xyz;
-	fPos = (modelMat * vec4(pos, 1.0)).xyz;
+	vec3 normal = (normalMat * vec4(v_normal, 1.0)).xyz;
+	diff = clamp(dot(normal, lPos), 0.2, 1.0);
 
 	gl_Position = mvp * vec4(pos, 1.0);
 }
