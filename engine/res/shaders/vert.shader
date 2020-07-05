@@ -13,7 +13,7 @@ uniform mat4 normalMat;
 void main()
 {
 	vec3 normal = (normalMat * vec4(v_normal, 1.0)).xyz;
-	diff = clamp(dot(normal, lPos), 0.2, 1.0);
+	diff = clamp(dot(normal, lPos), 0.0, 1.0) + 0.2;
 
 	gl_Position = mvp * vec4(pos, 1.0);
 }

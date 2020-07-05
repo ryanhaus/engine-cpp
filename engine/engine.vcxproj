@@ -142,11 +142,13 @@
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="C:\Users\Shadow\source\repos\engine\engine\res\basic_shaders\frag.shader" />
+    <None Include="C:\Users\Shadow\source\repos\engine\engine\res\basic_shaders\vert.shader" />
+    <None Include="res\lua\character.lua" />
     <None Include="res\shaders\frag.shader" />
     <None Include="res\shaders\vert.shader" />
     <None Include="res\basic_shaders\frag.shader" />
     <None Include="res\basic_shaders\vert.shader" />
-    <None Include="res\lua\test.lua" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\luaFunctions.h" />

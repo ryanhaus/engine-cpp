@@ -8,12 +8,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-extern "C"
-{
-	#include <luaFunctions.h>
-}
-
-
 #define DEBUG
 
 #ifdef DEBUG
@@ -56,31 +50,41 @@ ModelData parseObj(std::string file);
 void DrawCallModel(Model model, unsigned int program, glm::mat4 view, glm::mat4 projection);
 
 void fbSizeCallback(GLFWwindow* window, int width, int height);
-void scrollCallback(GLFWwindow* window, double xoff, double yoff);
 
 std::map<int, Model> render;
 int nextRenderId = 0;
 
 glm::vec3 cameraPos(0, 0, 0);
 glm::vec3 cameraRot(0, 0, 0);
-glm::vec3 lightPosition(-0.5f, -0.5f, -0.5f);
+glm::vec3 lightPosition(-0.5f, 1.0f, -1.0f);
 
 GLFWwindow* window;
-lua_State* Lua;
+
+extern "C"
+{
+	#include <luaFunctions.h>
+}
 
 int main()
 {
 	glfwInit();
+
+	glfwWindowHint(GLFW_SAMPLES, 4);
+
 	window = glfwCreateWindow(1080, 720, "Game", NULL, NULL);
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
 
 	glfwSetFramebufferSizeCallback(window, fbSizeCallback);
+	glfwSetCursorPosCallback(window, mouseMoveCallback);
 
 	glewInit();
 
+	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 
 	{
 		unsigned int vertexShader;
@@ -143,47 +147,39 @@ int main()
 		glDeleteShader(vertexShader);
 		glDeleteShader(fragmentShader);
 
-		double previousCursorX, previousCursorY;
-		glfwGetCursorPos(window, &previousCursorX, &previousCursorY);
-		double throwMouseToX, throwMouseToY;
-
-		bool lastFrameMouseRtClick = false;
-
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 		Lua = luaL_newstate();
 		luaL_openlibs(Lua);
 
-		lua_register(Lua, "createPart", render_makePart);
+		registerLua(Lua);
 
-		lua_register(Lua, "setPosition", movePart);
-		lua_register(Lua, "setRotation", rotatePart);
-		lua_register(Lua, "setSize", resizePart);
-
-		lua_register(Lua, "setColor", recolorPart);
-
-		lua_register(Lua, "setCameraPosition", moveCamera);
-		lua_register(Lua, "setCameraRotation", rotateCamera);
-
-		lua_register(Lua, "getKeyDown", getKeyDown);
-		lua_register(Lua, "getMouseButtonDown", getMouseButtonDown);
-		lua_register(Lua, "setMousePosition", setMousePosition);
-		lua_register(Lua, "getMousePosition", getMousePosition);
-		lua_register(Lua, "setCursorState", setCursorState);
-
-		glfwSetScrollCallback(window, scrollCallback);
-
-		luaL_dofile(Lua, "res/lua/test.lua");
+		luaL_dofile(Lua, "res/lua/character.lua");
 
 		while (!glfwWindowShouldClose(window))
 		{
 			glfwPollEvents();
 
-			lua_getglobal(Lua, "tick");
-			lua_call(Lua, 0, 0);
-
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glUseProgram(program);
+
+			lua_settop(Lua, 0);
+			lua_getglobal(Lua, "Game");
+			lua_getfield(Lua, -1, "Camera");
+			lua_getfield(Lua, -1, "Position");
+			lua_getfield(Lua, -1, "x");
+			lua_getfield(Lua, -2, "y");
+			lua_getfield(Lua, -3, "z");
+			cameraPos = glm::vec3(lua_tonumber(Lua, -3), lua_tonumber(Lua, -2), lua_tonumber(Lua, -1));
+
+			lua_settop(Lua, 2);
+			lua_getfield(Lua, -1, "Orientation");
+			lua_getfield(Lua, -1, "x");
+			lua_getfield(Lua, -2, "y");
+			lua_getfield(Lua, -3, "z");
+			cameraRot = glm::vec3(lua_tonumber(Lua, -3), lua_tonumber(Lua, -2), lua_tonumber(Lua, -1));
+
+			lua_settop(Lua, 0);
 
 			glm::mat4 view = glm::mat4(1.0f);
 			view = glm::rotate(view, cameraRot.x, glm::vec3(1, 0, 0));
@@ -193,14 +189,54 @@ int main()
 
 			int width, height;
 			glfwGetWindowSize(window, &width, &height);
+
+			if (width == 0 || height == 0)
+			{
+				width = 1;
+				height = 1;
+			}
+
 			glm::mat4 projection = glm::perspective(70.0f, (float)width / (float)height, 0.1f, 1000.0f);
 
 			glUniform3fv(glGetUniformLocation(program, "vPos"), 1, &cameraRot[0]);
 			glUniform3fv(glGetUniformLocation(program, "lPos"), 1, &lightPosition[0]);
 			
+			tickCallback();
+
 			std::map<int, Model>::iterator it;
-			for(it = render.begin(); it != render.end(); it++)
+			for (it = render.begin(); it != render.end(); it++)
+			{
+				lua_rawgeti(Lua, LUA_REGISTRYINDEX, it->first);
+				lua_getfield(Lua, -1, "Position");
+				lua_getfield(Lua, -1, "x");
+				lua_getfield(Lua, -2, "y");
+				lua_getfield(Lua, -3, "z");
+				it->second.position = glm::vec3(lua_tonumber(Lua, -3), lua_tonumber(Lua, -2), lua_tonumber(Lua, -1));
+
+				lua_settop(Lua, 1);
+				lua_getfield(Lua, -1, "Orientation");
+				lua_getfield(Lua, -1, "x");
+				lua_getfield(Lua, -2, "y");
+				lua_getfield(Lua, -3, "z");
+				it->second.orientation = glm::vec3(lua_tonumber(Lua, -3) * asin(1) / 90, lua_tonumber(Lua, -2) * asin(1) / 90, lua_tonumber(Lua, -1) * asin(1) / 90);
+
+				lua_settop(Lua, 1);
+				lua_getfield(Lua, -1, "Size");
+				lua_getfield(Lua, -1, "x");
+				lua_getfield(Lua, -2, "y");
+				lua_getfield(Lua, -3, "z");
+				it->second.size = glm::vec3(lua_tonumber(Lua, -3), lua_tonumber(Lua, -2), lua_tonumber(Lua, -1));
+
+				lua_settop(Lua, 1);
+				lua_getfield(Lua, -1, "Color");
+				lua_getfield(Lua, -1, "r");
+				lua_getfield(Lua, -2, "g");
+				lua_getfield(Lua, -3, "b");
+				it->second.color = glm::vec3(lua_tonumber(Lua, -3), lua_tonumber(Lua, -2), lua_tonumber(Lua, -1));
+
 				DrawCallModel(it->second, program, view, projection);
+				lua_settop(Lua, 0);
+			}
 
 			glfwSwapBuffers(window);
 		}
@@ -334,94 +370,6 @@ void DrawCallModel(Model model, unsigned int program, glm::mat4 view, glm::mat4 
 
 void fbSizeCallback(GLFWwindow* window, int width, int height)
 {
-	glViewport(0, 0, width, height);
-}
-
-void scrollCallback(GLFWwindow* window, double xoff, double yoff)
-{
-
-	lua_getglobal(Lua, "scrollWheelCallback");
-	lua_pushnumber(Lua, xoff);
-	lua_pushnumber(Lua, yoff);
-	lua_pcall(Lua, 2, 0, 0);
-}
-
-int render_makePart(lua_State* Lua)
-{
-	int id = ++nextRenderId;
-	render[id] = createModelFromFile(lua_tostring(Lua, 1), OBJ);
-	lua_pushinteger(Lua, id);
-	return 1;
-}
-
-int movePart(lua_State* Lua)
-{
-	render[lua_tointeger(Lua, 1)].position = glm::vec3(lua_tonumber(Lua, 2), lua_tonumber(Lua, 3), lua_tonumber(Lua, 4));
-	return 0;
-}
-
-int resizePart(lua_State* Lua)
-{
-	render[lua_tointeger(Lua, 1)].size = glm::vec3(lua_tonumber(Lua, 2), lua_tonumber(Lua, 3), lua_tonumber(Lua, 4));
-	return 0;
-}
-
-int rotatePart(lua_State* Lua)
-{
-	render[lua_tointeger(Lua, 1)].orientation = glm::vec3(lua_tonumber(Lua, 2), lua_tonumber(Lua, 3), lua_tonumber(Lua, 4));
-	return 0;
-}
-
-int recolorPart(lua_State* Lua)
-{
-	render[lua_tointeger(Lua, 1)].color = glm::vec3(lua_tonumber(Lua, 2), lua_tonumber(Lua, 3), lua_tonumber(Lua, 4));
-	return 0;
-}
-
-int moveCamera(lua_State* Lua)
-{
-	cameraPos = glm::vec3(lua_tonumber(Lua, 1), lua_tonumber(Lua, 2), lua_tonumber(Lua, 3));
-	return 0;
-}
-
-int rotateCamera(lua_State* Lua)
-{
-	cameraRot = glm::vec3(lua_tonumber(Lua, 1), lua_tonumber(Lua, 2), lua_tonumber(Lua, 3));
-	return 0;
-}
-
-int getKeyDown(lua_State* Lua)
-{
-	lua_pushboolean(Lua, GLFW_PRESS == glfwGetKey(window, lua_tointeger(Lua, 1)));
-	return 1;
-}
-
-int getMouseButtonDown(lua_State* Lua)
-{
-	lua_pushboolean(Lua, glfwGetMouseButton(window, lua_tointeger(Lua, 1)));
-	return 1;
-}
-
-int getMousePosition(lua_State* Lua)
-{
-	double x, y;
-	glfwGetCursorPos(window, &x, &y);
-	lua_newtable(Lua);
-	lua_pushnumber(Lua, x);
-	lua_setfield(Lua, -2, "x");
-	lua_pushnumber(Lua, y);
-	lua_setfield(Lua, -2, "y");
-	return 1;
-}
-
-int setMousePosition(lua_State* Lua)
-{
-	glfwSetCursorPos(window, lua_tonumber(Lua, 1), lua_tonumber(Lua, 2));
-	return 0;
-}
-
-int setCursorState(lua_State* Lua)
-{
-	glfwSetInputMode(window, GLFW_CURSOR, lua_tointeger(Lua, 1));
-	return 0;
+	if(width != 0 && height != 0)
+		glViewport(0, 0, width, height);
 }
