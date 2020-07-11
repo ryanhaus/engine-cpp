@@ -29,6 +29,7 @@ static void dumpstack(lua_State *L) {
 			break;
 		}
 	}
+	printf("\n");
 }
 
 int newObject(lua_State* Lua)
@@ -127,6 +128,8 @@ int newTickListener(lua_State* Lua)
 
 int updateInput(lua_State* Lua)
 {
+	if(lua_gettop(Lua) > 0)
+		lua_settop(Lua, 0);
 	lua_getglobal(Lua, "Input");
 	lua_getfield(Lua, -1, "CurrentCursorState");
 	glfwSetInputMode(window, GLFW_CURSOR, lua_tointeger(Lua, -1));
@@ -138,9 +141,10 @@ void tickCallback()
 	updateInput(Lua);
 	for (int functionRef : luaEventFunctions["Tick"])
 	{
+		if(lua_gettop(Lua) > 0)
+			lua_settop(Lua, 0);
 		lua_rawgeti(Lua, LUA_REGISTRYINDEX, functionRef);
 		lua_call(Lua, 0, 0);
-		lua_settop(Lua, 0);
 	}
 }
 
@@ -193,6 +197,56 @@ int updateMousePosition(lua_State* Lua)
 	return 0;
 }
 
+int getPlayers(lua_State* Lua)
+{
+	int j = 0;
+	std::map<std::string, std::array<float, 6>>::iterator it;
+	lua_settop(Lua, 0);
+	lua_newtable(Lua);
+	for (it = players.begin(); it != players.end(); it++)
+	{
+		lua_newtable(Lua);
+		lua_pushstring(Lua, it->first.c_str());
+		lua_setfield(Lua, -2, "Name");
+
+		lua_newtable(Lua);
+		lua_newtable(Lua);
+		lua_pushnumber(Lua, it->second[0]);
+		lua_setfield(Lua, -2, "x");
+		lua_pushnumber(Lua, it->second[1]);
+		lua_setfield(Lua, -2, "y");
+		lua_pushnumber(Lua, it->second[2]);
+		lua_setfield(Lua, -2, "z");
+		lua_setfield(Lua, -2, "Position");
+
+		lua_newtable(Lua);
+		lua_pushnumber(Lua, it->second[3]);
+		lua_setfield(Lua, -2, "x");
+		lua_pushnumber(Lua, it->second[4]);
+		lua_setfield(Lua, -2, "y");
+		lua_pushnumber(Lua, it->second[5]);
+		lua_setfield(Lua, -2, "z");
+		lua_setfield(Lua, -2, "Orientation");
+		lua_setfield(Lua, -2, "head");
+
+		int r = luaL_ref(Lua, LUA_REGISTRYINDEX);
+
+		lua_pushnumber(Lua, j++);
+		lua_rawgeti(Lua, LUA_REGISTRYINDEX, r);
+		lua_settable(Lua, -3);
+		luaL_unref(Lua, LUA_REGISTRYINDEX, r);
+	}
+
+	return 1;
+}
+
+int newPlayerJoinListener(lua_State* Lua)
+{
+	if (lua_isfunction(Lua, 1) == 1)
+		luaEventFunctions["PlayerJoin"].push_back(luaL_ref(Lua, LUA_REGISTRYINDEX));
+	return 0;
+}
+
 void registerLua(lua_State* Lua)
 {
 	lua_newtable(Lua);
@@ -219,6 +273,11 @@ void registerLua(lua_State* Lua)
 	lua_pushcfunction(Lua, newTickListener);
 	lua_setfield(Lua, -2, "addListener");
 	lua_setfield(Lua, -2, "Tick");
+
+	lua_newtable(Lua);
+	lua_pushcfunction(Lua, newPlayerJoinListener);
+	lua_setfield(Lua, -2, "addListener");
+	lua_setfield(Lua, -2, "PlayerJoin");
 
 	lua_newtable(Lua);
 
@@ -617,5 +676,53 @@ void registerLua(lua_State* Lua)
 	lua_setfield(Lua, -2, "Orientation");
 
 	lua_setfield(Lua, -2, "Camera");
+
+	lua_newtable(Lua);
+	lua_newtable(Lua);
+
+	lua_pushstring(Lua, "");
+	lua_setfield(Lua, -2, "Name");
+
+	lua_newtable(Lua);
+
+	lua_newtable(Lua);
+	lua_pushnumber(Lua, 0);
+	lua_setfield(Lua, -2, "x");
+	lua_pushnumber(Lua, 0);
+	lua_setfield(Lua, -2, "y");
+	lua_pushnumber(Lua, 0);
+	lua_setfield(Lua, -2, "z");
+	lua_setfield(Lua, -2, "Position");
+
+	lua_newtable(Lua);
+	lua_pushnumber(Lua, 0);
+	lua_setfield(Lua, -2, "x");
+	lua_pushnumber(Lua, 0);
+	lua_setfield(Lua, -2, "y");
+	lua_pushnumber(Lua, 0);
+	lua_setfield(Lua, -2, "z");
+	lua_setfield(Lua, -2, "Orientation");
+
+	lua_newtable(Lua);
+	lua_pushnumber(Lua, 0);
+	lua_setfield(Lua, -2, "x");
+	lua_pushnumber(Lua, 0);
+	lua_setfield(Lua, -2, "y");
+	lua_pushnumber(Lua, 0);
+	lua_setfield(Lua, -2, "z");
+	lua_setfield(Lua, -2, "Size");
+
+	lua_setfield(Lua, -2, "Head");
+
+	lua_setfield(Lua, -2, "LocalPlayer");
+
+	lua_setfield(Lua, -2, "Local");
+
+	lua_newtable(Lua);
+	lua_setfield(Lua, -2, "Players");
+
+	lua_pushcfunction(Lua, getPlayers);
+	lua_setfield(Lua, -2, "GetPlayers");
+
 	lua_setglobal(Lua, "Game");
 }

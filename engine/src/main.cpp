@@ -3,10 +3,13 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <array>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <random>
+#include <time.h>
 
 #define DEBUG
 
@@ -60,10 +63,15 @@ glm::vec3 lightPosition(-0.5f, 1.0f, -1.0f);
 
 GLFWwindow* window;
 
+std::map<std::string, std::array<float, 6>> players;
+std::vector<std::pair<std::string, std::array<float, 6>>> newPlayers;
+
 extern "C"
 {
 	#include <luaFunctions.h>
 }
+
+#include <network.h>
 
 int main()
 {
@@ -156,6 +164,17 @@ int main()
 
 		luaL_dofile(Lua, "res/lua/character.lua");
 
+		std::thread recHeadT(socketReceiveHeads, &s, &players, &newPlayers);
+
+		srand(time(NULL));
+		std::string localName = std::to_string(rand()).substr(0, 12);
+
+		lua_getglobal(Lua, "Game");
+		lua_getfield(Lua, -1, "Local");
+		lua_getfield(Lua, -1, "LocalPlayer");
+		lua_pushstring(Lua, localName.c_str());
+		lua_setfield(Lua, -2, "Name");
+
 		while (!glfwWindowShouldClose(window))
 		{
 			glfwPollEvents();
@@ -200,52 +219,143 @@ int main()
 
 			glUniform3fv(glGetUniformLocation(program, "vPos"), 1, &cameraRot[0]);
 			glUniform3fv(glGetUniformLocation(program, "lPos"), 1, &lightPosition[0]);
+
+			{
+				int j = 0;
+				std::map<std::string, std::array<float, 6>>::iterator it;
+				lua_settop(Lua, 0);
+				lua_newtable(Lua);
+				for (it = players.begin(); it != players.end(); it++)
+				{
+					lua_newtable(Lua);
+					lua_pushstring(Lua, it->first.c_str());
+					lua_setfield(Lua, -2, "Name");
+
+					lua_newtable(Lua);
+					lua_newtable(Lua);
+					lua_pushnumber(Lua, it->second[0]);
+					lua_setfield(Lua, -2, "x");
+					lua_pushnumber(Lua, it->second[1]);
+					lua_setfield(Lua, -2, "y");
+					lua_pushnumber(Lua, it->second[2]);
+					lua_setfield(Lua, -2, "z");
+					lua_setfield(Lua, -2, "Position");
+
+					lua_newtable(Lua);
+					lua_pushnumber(Lua, it->second[3]);
+					lua_setfield(Lua, -2, "x");
+					lua_pushnumber(Lua, it->second[4]);
+					lua_setfield(Lua, -2, "y");
+					lua_pushnumber(Lua, it->second[5]);
+					lua_setfield(Lua, -2, "z");
+					lua_setfield(Lua, -2, "Orientation");
+					lua_setfield(Lua, -2, "head");
+
+					int r = luaL_ref(Lua, LUA_REGISTRYINDEX);
+
+					lua_pushnumber(Lua, j++);
+					lua_rawgeti(Lua, LUA_REGISTRYINDEX, r);
+					lua_settable(Lua, -3);
+					luaL_unref(Lua, LUA_REGISTRYINDEX, r);
+				}
+
+				int r = luaL_ref(Lua, LUA_REGISTRYINDEX);
+
+				lua_getglobal(Lua, "Game");
+				lua_rawgeti(Lua, LUA_REGISTRYINDEX, r);
+				lua_setfield(Lua, -2, "Players");
+
+				luaL_unref(Lua, LUA_REGISTRYINDEX, r);
+			}
 			
 			tickCallback();
+			socketSendHead();
 
-			std::map<int, Model>::iterator it;
-			for (it = render.begin(); it != render.end(); it++)
+			for (int i = 0; i < newPlayers.size(); i++)
 			{
-				lua_rawgeti(Lua, LUA_REGISTRYINDEX, it->first);
-				lua_getfield(Lua, -1, "Position");
-				lua_getfield(Lua, -1, "x");
-				lua_getfield(Lua, -2, "y");
-				lua_getfield(Lua, -3, "z");
-				it->second.position = glm::vec3(lua_tonumber(Lua, -3), lua_tonumber(Lua, -2), lua_tonumber(Lua, -1));
+				auto player = newPlayers[i];
+				for (int functionRef : luaEventFunctions["PlayerJoin"])
+				{
+					if (lua_gettop(Lua) > 0)
+						lua_settop(Lua, 0);
+					lua_rawgeti(Lua, LUA_REGISTRYINDEX, functionRef);
 
-				lua_settop(Lua, 1);
-				lua_getfield(Lua, -1, "Orientation");
-				lua_getfield(Lua, -1, "x");
-				lua_getfield(Lua, -2, "y");
-				lua_getfield(Lua, -3, "z");
-				it->second.orientation = glm::vec3(lua_tonumber(Lua, -3) * asin(1) / 90, lua_tonumber(Lua, -2) * asin(1) / 90, lua_tonumber(Lua, -1) * asin(1) / 90);
+					lua_newtable(Lua);
+					lua_pushstring(Lua, player.first.c_str());
+					lua_setfield(Lua, -2, "Name");
 
-				lua_settop(Lua, 1);
-				lua_getfield(Lua, -1, "Size");
-				lua_getfield(Lua, -1, "x");
-				lua_getfield(Lua, -2, "y");
-				lua_getfield(Lua, -3, "z");
-				it->second.size = glm::vec3(lua_tonumber(Lua, -3), lua_tonumber(Lua, -2), lua_tonumber(Lua, -1));
+					lua_newtable(Lua);
+					lua_newtable(Lua);
+					lua_pushnumber(Lua, player.second[0]);
+					lua_setfield(Lua, -2, "x");
+					lua_pushnumber(Lua, player.second[1]);
+					lua_setfield(Lua, -2, "y");
+					lua_pushnumber(Lua, player.second[2]);
+					lua_setfield(Lua, -2, "z");
+					lua_setfield(Lua, -2, "Position");
 
-				lua_settop(Lua, 1);
-				lua_getfield(Lua, -1, "Color");
-				lua_getfield(Lua, -1, "r");
-				lua_getfield(Lua, -2, "g");
-				lua_getfield(Lua, -3, "b");
-				it->second.color = glm::vec3(lua_tonumber(Lua, -3), lua_tonumber(Lua, -2), lua_tonumber(Lua, -1));
+					lua_newtable(Lua);
+					lua_pushnumber(Lua, player.second[3]);
+					lua_setfield(Lua, -2, "x");
+					lua_pushnumber(Lua, player.second[4]);
+					lua_setfield(Lua, -2, "y");
+					lua_pushnumber(Lua, player.second[5]);
+					lua_setfield(Lua, -2, "z");
+					lua_setfield(Lua, -2, "Orientation");
+					lua_setfield(Lua, -2, "head");
+					
+					lua_call(Lua, 1, 0);
+				}
+			}
 
-				DrawCallModel(it->second, program, view, projection);
-				lua_settop(Lua, 0);
+			newPlayers.clear();
+
+			{
+				std::map<int, Model>::iterator it;
+				for (it = render.begin(); it != render.end(); it++)
+				{
+					lua_settop(Lua, 0);
+					lua_rawgeti(Lua, LUA_REGISTRYINDEX, it->first);
+					lua_getfield(Lua, -1, "Position");
+					lua_getfield(Lua, -1, "x");
+					lua_getfield(Lua, -2, "y");
+					lua_getfield(Lua, -3, "z");
+					it->second.position = glm::vec3(lua_tonumber(Lua, -3), lua_tonumber(Lua, -2), lua_tonumber(Lua, -1));
+
+					lua_settop(Lua, 1);
+					lua_getfield(Lua, -1, "Orientation");
+					lua_getfield(Lua, -1, "x");
+					lua_getfield(Lua, -2, "y");
+					lua_getfield(Lua, -3, "z");
+					it->second.orientation = glm::vec3(lua_tonumber(Lua, -3) * asin(1) / 90, lua_tonumber(Lua, -2) * asin(1) / 90, lua_tonumber(Lua, -1) * asin(1) / 90);
+
+					lua_settop(Lua, 1);
+					lua_getfield(Lua, -1, "Size");
+					lua_getfield(Lua, -1, "x");
+					lua_getfield(Lua, -2, "y");
+					lua_getfield(Lua, -3, "z");
+					it->second.size = glm::vec3(lua_tonumber(Lua, -3), lua_tonumber(Lua, -2), lua_tonumber(Lua, -1));
+
+					lua_settop(Lua, 1);
+					lua_getfield(Lua, -1, "Color");
+					lua_getfield(Lua, -1, "r");
+					lua_getfield(Lua, -2, "g");
+					lua_getfield(Lua, -3, "b");
+					it->second.color = glm::vec3(lua_tonumber(Lua, -3), lua_tonumber(Lua, -2), lua_tonumber(Lua, -1));
+
+					DrawCallModel(it->second, program, view, projection);
+				}
 			}
 
 			glfwSwapBuffers(window);
 		}
 
+		glfwTerminate();
+		recHeadT.detach();
 		lua_close(Lua);
 		glDeleteProgram(program);
 	}
 
-	glfwTerminate();
 	return 0;
 }
 
