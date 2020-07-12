@@ -229,12 +229,7 @@ int getPlayers(lua_State* Lua)
 		lua_setfield(Lua, -2, "Orientation");
 		lua_setfield(Lua, -2, "head");
 
-		int r = luaL_ref(Lua, LUA_REGISTRYINDEX);
-
-		lua_pushnumber(Lua, j++);
-		lua_rawgeti(Lua, LUA_REGISTRYINDEX, r);
-		lua_settable(Lua, -3);
-		luaL_unref(Lua, LUA_REGISTRYINDEX, r);
+		lua_setfield(Lua, -2, it->first.c_str());
 	}
 
 	return 1;

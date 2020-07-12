@@ -1,16 +1,3 @@
-function dump(o)
-   if type(o) == 'table' then
-      local s = '{ '
-      for k,v in pairs(o) do
-         if type(k) ~= 'number' then k = '"'..k..'"' end
-         s = s .. '['..k..'] = ' .. dump(v) .. ','
-      end
-      return s .. '} '
-   else
-      return tostring(o)
-   end
-end
-
 local head = Object.create("res/3d/head.obj");
 local torso = Object.create();
 local leftArm = Object.create();
@@ -57,49 +44,6 @@ local cameraDistance = 10;
 local lastFrameRtClick = Input.isDown(Input.MouseCode.Right);
 
 local speed = 8;
-
-local playerParts = {};
-
-function createPlayer(player)
-	print("Connected: " .. player.Name);
-	playerParts[player.Name] = {
-		head = Object.create("res/3d/head.obj"),
-		torso = Object.create(),
-		leftArm = Object.create(),
-		rightArm = Object.create(),
-		leftLeg = Object.create(),
-		rightLeg = Object.create()
-	};
-
-	playerParts[player.Name].head.Color = ColorRGB.create(255, 215, 100);
-	playerParts[player.Name].torso.Color = ColorRGB.create(100, 175, 255);
-	playerParts[player.Name].leftArm.Color = ColorRGB.create(255, 215, 100);
-	playerParts[player.Name].rightArm.Color = ColorRGB.create(255, 215, 100);
-	playerParts[player.Name].leftLeg.Color = ColorRGB.create(150, 225, 120);
-	playerParts[player.Name].rightLeg.Color = ColorRGB.create(150, 225, 120);
-
-	playerParts[player.Name].head.Position = player.head.Position;
-	playerParts[player.Name].head.Orientation = player.head.Orientation;
-
-	playerParts[player.Name].torso.Position = Vector3.create(playerParts[player.Name].head.Position.x, 2.5, playerParts[player.Name].head.Position.z);
-	playerParts[player.Name].leftArm.Position = Vector3.create(-1.125 * math.sin(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.x, 2.5, -1.125 * math.cos(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.z);
-	playerParts[player.Name].rightArm.Position = Vector3.create(1.125 * math.sin(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.x, 2.5, 1.125 * math.cos(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.z);
-	playerParts[player.Name].leftLeg.Position = Vector3.create(-0.375 * math.sin(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.x, 0.8, -0.375 * math.cos(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.z);
-	playerParts[player.Name].rightLeg.Position = Vector3.create(0.375 * math.sin(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.x, 0.8, 0.375 * math.cos(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.z);
-		
-	playerParts[player.Name].torso.Orientation = playerParts[player.Name].head.Orientation;
-	playerParts[player.Name].leftArm.Orientation = playerParts[player.Name].head.Orientation;
-	playerParts[player.Name].rightArm.Orientation = playerParts[player.Name].head.Orientation;
-	playerParts[player.Name].leftLeg.Orientation = playerParts[player.Name].head.Orientation;
-	playerParts[player.Name].rightLeg.Orientation = playerParts[player.Name].head.Orientation;
-
-	
-	playerParts[player.Name].torso.Size = Vector3.create(0.75, 0.9, 0.375);
-	playerParts[player.Name].leftArm.Size = Vector3.create(0.375, 0.9, 0.375);
-	playerParts[player.Name].rightArm.Size = Vector3.create(0.375, 0.9, 0.375);
-	playerParts[player.Name].leftLeg.Size = Vector3.create(0.375, 0.8, 0.375);
-	playerParts[player.Name].rightLeg.Size = Vector3.create(0.375, 0.8, 0.375);
-end
 
 Events.Tick.addListener(function()
 	local cursorPosition = Input.MousePosition;
@@ -185,7 +129,7 @@ Events.Tick.addListener(function()
 	targetYRotation = targetYRotation - halfPi * avgN;
 
     if avgN > 0 then	
-        head.Orientation.y = -90 / halfPi * ((head.Orientation.y * halfPi / -90 - targetYRotation / avgN) * -0.125 + head.Orientation.y * halfPi / -90);
+        head.Orientation.y = -90 / halfPi * ((head.Orientation.y * halfPi / -90 - targetYRotation / avgN) * -8 * deltaSeconds + head.Orientation.y * halfPi / -90);
 		head.Position.x = head.Position.x + math.sin(targetYRotation / avgN) * deltaSeconds * speed;	
         head.Position.z = head.Position.z - math.cos(targetYRotation / avgN) * deltaSeconds * speed;	
     end
@@ -215,29 +159,6 @@ Events.Tick.addListener(function()
 	lastFrameRtClick = Input.isDown(Input.MouseCode.Right);
 	prevCursor = cursorPosition;
 	prevClock = os.clock();
-
-	for i, player in ipairs(Game.GetPlayers()) do
-		if player.Name ~= Game.Local.LocalPlayer.Name then
-			if playerParts[player.Name] ~= nil then
-				playerParts[player.Name].head.Position = player.head.Position;
-				playerParts[player.Name].head.Orientation = player.head.Orientation;
-
-				playerParts[player.Name].torso.Position = Vector3.create(playerParts[player.Name].head.Position.x, 2.5, playerParts[player.Name].head.Position.z);
-				playerParts[player.Name].leftArm.Position = Vector3.create(-1.125 * math.sin(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.x, 2.5, -1.125 * math.cos(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.z);
-				playerParts[player.Name].rightArm.Position = Vector3.create(1.125 * math.sin(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.x, 2.5, 1.125 * math.cos(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.z);
-				playerParts[player.Name].leftLeg.Position = Vector3.create(-0.375 * math.sin(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.x, 0.8, -0.375 * math.cos(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.z);
-				playerParts[player.Name].rightLeg.Position = Vector3.create(0.375 * math.sin(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.x, 0.8, 0.375 * math.cos(math.rad(playerParts[player.Name].head.Orientation.y + 90)) + playerParts[player.Name].head.Position.z);
-		
-				playerParts[player.Name].torso.Orientation = playerParts[player.Name].head.Orientation;
-				playerParts[player.Name].leftArm.Orientation = playerParts[player.Name].head.Orientation;
-				playerParts[player.Name].rightArm.Orientation = playerParts[player.Name].head.Orientation;
-				playerParts[player.Name].leftLeg.Orientation = playerParts[player.Name].head.Orientation;
-				playerParts[player.Name].rightLeg.Orientation = playerParts[player.Name].head.Orientation;
-			else
-				createPlayer(player);
-			end
-		end
-	end
 end);
 
-Events.PlayerJoin.addListener(createPlayer);
+return {};

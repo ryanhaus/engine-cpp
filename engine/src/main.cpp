@@ -75,6 +75,7 @@ extern "C"
 
 int main()
 {
+	// ShowWindow(GetConsoleWindow(), SW_HIDE);
 	glfwInit();
 
 	glfwWindowHint(GLFW_SAMPLES, 4);
@@ -162,7 +163,7 @@ int main()
 
 		registerLua(Lua);
 
-		luaL_dofile(Lua, "res/lua/character.lua");
+		luaL_dofile(Lua, "res/lua/main.lua");
 
 		std::thread recHeadT(socketReceiveHeads, &s, &players, &newPlayers);
 
@@ -274,6 +275,8 @@ int main()
 			for (int i = 0; i < newPlayers.size(); i++)
 			{
 				auto player = newPlayers[i];
+				if (player.first == localName)
+					continue;
 				for (int functionRef : luaEventFunctions["PlayerJoin"])
 				{
 					if (lua_gettop(Lua) > 0)
