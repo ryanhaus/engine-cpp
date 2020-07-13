@@ -9,6 +9,7 @@ struct HeadUpdate
 {
 	char username[25];
 	float head[6];
+	char playerWalking;
 };
 
 using boost::asio::ip::udp;
@@ -41,7 +42,7 @@ char* socketSend(const char* request)
 	}
 }
 
-void socketReceiveHeads(udp::socket* socket, std::map<std::string, std::array<float, 6>>* playerMap, std::vector<std::pair<std::string, std::array<float, 6>>>* newPlayers)
+void socketReceiveHeads(udp::socket* socket, std::map<std::string, std::pair<std::array<float, 6>, char>>* playerMap, std::vector<std::pair<std::string, std::pair<std::array<float, 6>, char>>>* newPlayers)
 {
 	for (;;)
 	{
@@ -58,9 +59,9 @@ void socketReceiveHeads(udp::socket* socket, std::map<std::string, std::array<fl
 			std::copy(std::begin(update.head), std::end(update.head), head.begin());
 
 			if (players.find(std::string(update.username)) == players.end())
-				newPlayers->push_back(std::make_pair(std::string(update.username), head));
+				newPlayers->push_back(std::make_pair(std::string(update.username), std::make_pair(head, update.playerWalking)));
 
-			playerMap->insert_or_assign(std::string(update.username), head);
+			playerMap->insert_or_assign(std::string(update.username), std::make_pair(head, update.playerWalking));
 		}
 		catch (std::exception& e)
 		{
@@ -83,7 +84,8 @@ void socketSendHead()
 				0.0f,
 				0.0f,
 				0.0f
-			}
+			},
+			'f'
 		};
 
 		lua_getglobal(Lua, "Game");
@@ -91,7 +93,8 @@ void socketSendHead()
 		lua_getfield(Lua, -1, "LocalPlayer");
 		lua_getfield(Lua, -1, "Name");
 
-		std::memcpy(update.username, lua_tostring(Lua, -1), 24);
+		const char* localName = lua_tostring(Lua, -1);
+		std::memcpy(update.username, localName, 24);
 
 		lua_settop(Lua, 0);
 		lua_getglobal(Lua, "Game");
@@ -127,6 +130,10 @@ void socketSendHead()
 		lua_getfield(Lua, -3, "z");
 		c = lua_tonumber(Lua, -1);
 		std::memcpy(&update.head[5], &c, sizeof(float));
+
+		char walking = playerWalking ? 't' : 'f';
+
+		std::memcpy(&update.playerWalking, &walking, sizeof(char));
 
 		unsigned char* buffer = (unsigned char*)malloc(sizeof(update));
 		memcpy(buffer, (const unsigned char*)&update, sizeof(update));

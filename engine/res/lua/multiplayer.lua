@@ -17,28 +17,62 @@ for i, player in ipairs(Game.GetPlayers()) do
 	if player.Name ~= Game.Local.LocalPlayer.Name then
 		if playerParts[player.Name] == nil then
 			createPlayer(player);
-			print("Connected: " .. player.Name);
 		end
 	end
 end
 
+local bWalkTime = os.clock();
+local prevClock = os.clock();
+
 function playerUpdate()
+	local deltaSeconds = os.clock() - prevClock;
 	for name, p in pairs(playerParts) do
 		playerParts[name].head.Position = Game.GetPlayers()[name].head.Position;
 		playerParts[name].head.Orientation = Game.GetPlayers()[name].head.Orientation;
 
-		playerParts[name].torso.Position = Vector3.create(playerParts[name].head.Position.x, 2.5, playerParts[name].head.Position.z);
-		playerParts[name].leftArm.Position = Vector3.create(-1.125 * math.sin(math.rad(playerParts[name].head.Orientation.y + 90)) + playerParts[name].head.Position.x, 2.5, -1.125 * math.cos(math.rad(playerParts[name].head.Orientation.y + 90)) + playerParts[name].head.Position.z);
-		playerParts[name].rightArm.Position = Vector3.create(1.125 * math.sin(math.rad(playerParts[name].head.Orientation.y + 90)) + playerParts[name].head.Position.x, 2.5, 1.125 * math.cos(math.rad(playerParts[name].head.Orientation.y + 90)) + playerParts[name].head.Position.z);
-		playerParts[name].leftLeg.Position = Vector3.create(-0.375 * math.sin(math.rad(playerParts[name].head.Orientation.y + 90)) + playerParts[name].head.Position.x, 0.8, -0.375 * math.cos(math.rad(playerParts[name].head.Orientation.y + 90)) + playerParts[name].head.Position.z);
-		playerParts[name].rightLeg.Position = Vector3.create(0.375 * math.sin(math.rad(playerParts[name].head.Orientation.y + 90)) + playerParts[name].head.Position.x, 0.8, 0.375 * math.cos(math.rad(playerParts[name].head.Orientation.y + 90)) + playerParts[name].head.Position.z);
+		local xori = math.sin(math.rad(playerParts[name].head.Orientation.y + 90));
+		local zori = math.cos(math.rad(playerParts[name].head.Orientation.y + 90));
 
-		playerParts[name].torso.Orientation = playerParts[name].head.Orientation;
-		playerParts[name].leftArm.Orientation = playerParts[name].head.Orientation;
-		playerParts[name].rightArm.Orientation = playerParts[name].head.Orientation;
-		playerParts[name].leftLeg.Orientation = playerParts[name].head.Orientation;
-		playerParts[name].rightLeg.Orientation = playerParts[name].head.Orientation;
+		if not Game.GetPlayerWalking(name) then
+			playerParts[name].torso.Orientation = playerParts[name].head.Orientation;
+			playerParts[name].leftArm.Orientation = Vector3.create(0, playerParts[name].head.Orientation.y + 90, playerParts[name].leftArm.Orientation.z - playerParts[name].leftArm.Orientation.z *	 	deltaSeconds * 15);
+			playerParts[name].rightArm.Orientation = Vector3.create(0, playerParts[name].head.Orientation.y + 90, playerParts[name].rightArm.Orientation.z - playerParts[name].rightArm.Orientation.z * 	deltaSeconds * 15);
+			playerParts[name].leftLeg.Orientation = Vector3.create(0, playerParts[name].head.Orientation.y + 90, playerParts[name].leftLeg.Orientation.z - playerParts[name].leftLeg.Orientation.z * 		deltaSeconds * 15);
+			playerParts[name].rightLeg.Orientation = Vector3.create(0, playerParts[name].head.Orientation.y + 90, playerParts[name].rightLeg.Orientation.z - playerParts[name].rightLeg.Orientation.z * 	deltaSeconds * 15);
+
+			local zo = math.cos(math.rad(playerParts[name].head.Orientation.y));
+
+			playerParts[name].torso.Position = Vector3.create(playerParts[name].head.Position.x, 2.5, playerParts[name].head.Position.z);
+			playerParts[name].leftArm.Position = Vector3.create(-1.125 * xori + playerParts[name].head.Position.x, 2.5 - math.cos(math.rad(playerParts[name].leftArm.Orientation.z )) * 0.40 + 0.40, -1.125 * zori - zo * math.sin(math.rad(playerParts[name].leftArm.Orientation.z )) * 0.45 + playerParts[name].head.Position.z);
+			playerParts[name].rightArm.Position = Vector3.create(1.125 * xori + playerParts[name].head.Position.x, 2.5 - math.cos(math.rad(playerParts[name].rightArm.Orientation.z)) * 0.40 + 0.40, 1.1250 * zori + zo * math.sin(math.rad(playerParts[name].rightArm.Orientation.z)) * 0.45 + playerParts[name].head.Position.z);
+			playerParts[name].leftLeg.Position = Vector3.create(-0.375 * xori + playerParts[name].head.Position.x, 0.8 - math.cos(math.rad(playerParts[name].leftLeg.Orientation.z )) * 0.35 + 0.45, -0.375 * zori + zo * math.sin(math.rad(playerParts[name].leftLeg.Orientation.z )) * 0.40 + playerParts[name].head.Position.z);
+			playerParts[name].rightLeg.Position = Vector3.create(0.375 * xori + playerParts[name].head.Position.x, 0.8 - math.cos(math.rad(playerParts[name].rightLeg.Orientation.z)) * 0.35 + 0.45, 0.3750 * zori - zo * math.sin(math.rad(playerParts[name].rightLeg.Orientation.z)) * 0.40 + playerParts[name].head.Position.z);
+		else
+			local limbTimer = math.sin(7.5 * (os.clock()));
+			local limbOrientation = math.deg(math.tan(limbTimer)) * 0.75;
+
+			playerParts[name].torso.Orientation = playerParts[name].head.Orientation;
+			playerParts[name].leftArm.Orientation = Vector3.create(0, playerParts[name].head.Orientation.y + 90, limbOrientation);
+			playerParts[name].rightArm.Orientation = Vector3.create(0, playerParts[name].head.Orientation.y + 90, -limbOrientation);
+			playerParts[name].leftLeg.Orientation = Vector3.create(0, playerParts[name].head.Orientation.y + 90, -limbOrientation);
+			playerParts[name].rightLeg.Orientation = Vector3.create(0, playerParts[name].head.Orientation.y + 90, limbOrientation);
+			
+			local xpos = math.sin(math.rad(playerParts[name].head.Orientation.y + 90));
+			local zpos = math.cos(math.rad(playerParts[name].head.Orientation.y + 90));
+			local lxzpos = math.sin(limbTimer);
+			local lypos = math.cos(limbTimer);
+	
+			local xo = math.sin(math.rad(playerParts[name].head.Orientation.y));
+			local zo = math.cos(math.rad(playerParts[name].head.Orientation.y));
+
+			playerParts[name].torso.Position = Vector3.create(playerParts[name].head.Position.x, 2.5, playerParts[name].head.Position.z);
+			playerParts[name].leftArm.Position = Vector3.create(-1.125 * xori - xo * lxzpos * 0.45 + playerParts[name].head.Position.x, 2.5 - lypos * 0.40 + 0.40, -1.125 * zori - zo * lxzpos * 0.45 + playerParts[name].head.Position.z);
+			playerParts[name].rightArm.Position = Vector3.create(1.125 * xori + xo * lxzpos * 0.45 + playerParts[name].head.Position.x, 2.5 - lypos * 0.40 + 0.40, 1.1250 * zori + zo * lxzpos * 0.45 + playerParts[name].head.Position.z);
+			playerParts[name].leftLeg.Position = Vector3.create(-0.375 * xori + xo * lxzpos * 0.40 + playerParts[name].head.Position.x, 0.8 - lypos * 0.35 + 0.45, -0.375 * zori + zo * lxzpos * 0.40 + playerParts[name].head.Position.z);
+			playerParts[name].rightLeg.Position = Vector3.create(0.375 * xori - xo * lxzpos * 0.40 + playerParts[name].head.Position.x, 0.8 - lypos * 0.35 + 0.45, 0.3750 * zori - zo * lxzpos * 0.40 + playerParts[name].head.Position.z);
+		end
 	end
+	prevClock = os.clock();
 end
 
 function createPlayer(player)

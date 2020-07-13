@@ -63,8 +63,10 @@ glm::vec3 lightPosition(-0.5f, 1.0f, -1.0f);
 
 GLFWwindow* window;
 
-std::map<std::string, std::array<float, 6>> players;
-std::vector<std::pair<std::string, std::array<float, 6>>> newPlayers;
+std::map<std::string, std::pair<std::array<float, 6>, char>> players;
+std::vector<std::pair<std::string, std::pair<std::array<float, 6>, char>>> newPlayers;
+
+bool playerWalking = false;
 
 extern "C"
 {
@@ -223,7 +225,7 @@ int main()
 
 			{
 				int j = 0;
-				std::map<std::string, std::array<float, 6>>::iterator it;
+				std::map<std::string, std::pair<std::array<float, 6>, char>>::iterator it;
 				lua_settop(Lua, 0);
 				lua_newtable(Lua);
 				for (it = players.begin(); it != players.end(); it++)
@@ -234,20 +236,20 @@ int main()
 
 					lua_newtable(Lua);
 					lua_newtable(Lua);
-					lua_pushnumber(Lua, it->second[0]);
+					lua_pushnumber(Lua, it->second.first[0]);
 					lua_setfield(Lua, -2, "x");
-					lua_pushnumber(Lua, it->second[1]);
+					lua_pushnumber(Lua, it->second.first[1]);
 					lua_setfield(Lua, -2, "y");
-					lua_pushnumber(Lua, it->second[2]);
+					lua_pushnumber(Lua, it->second.first[2]);
 					lua_setfield(Lua, -2, "z");
 					lua_setfield(Lua, -2, "Position");
 
 					lua_newtable(Lua);
-					lua_pushnumber(Lua, it->second[3]);
+					lua_pushnumber(Lua, it->second.first[3]);
 					lua_setfield(Lua, -2, "x");
-					lua_pushnumber(Lua, it->second[4]);
+					lua_pushnumber(Lua, it->second.first[4]);
 					lua_setfield(Lua, -2, "y");
-					lua_pushnumber(Lua, it->second[5]);
+					lua_pushnumber(Lua, it->second.first[5]);
 					lua_setfield(Lua, -2, "z");
 					lua_setfield(Lua, -2, "Orientation");
 					lua_setfield(Lua, -2, "head");
@@ -289,20 +291,20 @@ int main()
 
 					lua_newtable(Lua);
 					lua_newtable(Lua);
-					lua_pushnumber(Lua, player.second[0]);
+					lua_pushnumber(Lua, player.second.first[0]);
 					lua_setfield(Lua, -2, "x");
-					lua_pushnumber(Lua, player.second[1]);
+					lua_pushnumber(Lua, player.second.first[1]);
 					lua_setfield(Lua, -2, "y");
-					lua_pushnumber(Lua, player.second[2]);
+					lua_pushnumber(Lua, player.second.first[2]);
 					lua_setfield(Lua, -2, "z");
 					lua_setfield(Lua, -2, "Position");
 
 					lua_newtable(Lua);
-					lua_pushnumber(Lua, player.second[3]);
+					lua_pushnumber(Lua, player.second.first[3]);
 					lua_setfield(Lua, -2, "x");
-					lua_pushnumber(Lua, player.second[4]);
+					lua_pushnumber(Lua, player.second.first[4]);
 					lua_setfield(Lua, -2, "y");
-					lua_pushnumber(Lua, player.second[5]);
+					lua_pushnumber(Lua, player.second.first[5]);
 					lua_setfield(Lua, -2, "z");
 					lua_setfield(Lua, -2, "Orientation");
 					lua_setfield(Lua, -2, "head");

@@ -200,7 +200,7 @@ int updateMousePosition(lua_State* Lua)
 int getPlayers(lua_State* Lua)
 {
 	int j = 0;
-	std::map<std::string, std::array<float, 6>>::iterator it;
+	std::map<std::string, std::pair<std::array<float, 6>, char>>::iterator it;
 	lua_settop(Lua, 0);
 	lua_newtable(Lua);
 	for (it = players.begin(); it != players.end(); it++)
@@ -211,20 +211,20 @@ int getPlayers(lua_State* Lua)
 
 		lua_newtable(Lua);
 		lua_newtable(Lua);
-		lua_pushnumber(Lua, it->second[0]);
+		lua_pushnumber(Lua, it->second.first[0]);
 		lua_setfield(Lua, -2, "x");
-		lua_pushnumber(Lua, it->second[1]);
+		lua_pushnumber(Lua, it->second.first[1]);
 		lua_setfield(Lua, -2, "y");
-		lua_pushnumber(Lua, it->second[2]);
+		lua_pushnumber(Lua, it->second.first[2]);
 		lua_setfield(Lua, -2, "z");
 		lua_setfield(Lua, -2, "Position");
 
 		lua_newtable(Lua);
-		lua_pushnumber(Lua, it->second[3]);
+		lua_pushnumber(Lua, it->second.first[3]);
 		lua_setfield(Lua, -2, "x");
-		lua_pushnumber(Lua, it->second[4]);
+		lua_pushnumber(Lua, it->second.first[4]);
 		lua_setfield(Lua, -2, "y");
-		lua_pushnumber(Lua, it->second[5]);
+		lua_pushnumber(Lua, it->second.first[5]);
 		lua_setfield(Lua, -2, "z");
 		lua_setfield(Lua, -2, "Orientation");
 		lua_setfield(Lua, -2, "head");
@@ -239,6 +239,18 @@ int newPlayerJoinListener(lua_State* Lua)
 {
 	if (lua_isfunction(Lua, 1) == 1)
 		luaEventFunctions["PlayerJoin"].push_back(luaL_ref(Lua, LUA_REGISTRYINDEX));
+	return 0;
+}
+
+int getPlayerWalking(lua_State* Lua)
+{
+	lua_pushboolean(Lua, players[std::string(lua_tostring(Lua, 1))].second == 't');
+	return 1;
+}
+
+int setPlayerWalking(lua_State* Lua)
+{
+	playerWalking = lua_toboolean(Lua, 1);
 	return 0;
 }
 
@@ -718,6 +730,12 @@ void registerLua(lua_State* Lua)
 
 	lua_pushcfunction(Lua, getPlayers);
 	lua_setfield(Lua, -2, "GetPlayers");
+
+	lua_pushcfunction(Lua, getPlayerWalking);
+	lua_setfield(Lua, -2, "GetPlayerWalking");
+
+	lua_pushcfunction(Lua, setPlayerWalking);
+	lua_setfield(Lua, -2, "SetPlayerWalking");
 
 	lua_setglobal(Lua, "Game");
 }

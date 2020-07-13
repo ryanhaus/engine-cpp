@@ -12,7 +12,7 @@ head.Position = Vector3.create(0, 3.85, 0);
 head.Color = ColorRGB.create(255, 215, 100);
 
 torso.Position = Vector3.create(0, 2.5, 0);
-torso.Size = Vector3.create(0.75, 0.9, 0.375);
+torso.Size = Vector3.create(0.755, 0.9, 0.3755);
 torso.Color = ColorRGB.create(100, 175, 255);
 
 leftArm.Position = Vector3.create(-1.125, 2.5, 0);
@@ -44,6 +44,8 @@ local cameraDistance = 10;
 local lastFrameRtClick = Input.isDown(Input.MouseCode.Right);
 
 local speed = 8;
+
+local bWalkTime = os.clock();
 
 Events.Tick.addListener(function()
 	local cursorPosition = Input.MousePosition;
@@ -128,32 +130,65 @@ Events.Tick.addListener(function()
 
 	targetYRotation = targetYRotation - halfPi * avgN;
 
-    if avgN > 0 then	
+    if avgN >= 1 then	
         head.Orientation.y = -90 / halfPi * ((head.Orientation.y * halfPi / -90 - targetYRotation / avgN) * -8 * deltaSeconds + head.Orientation.y * halfPi / -90);
-		head.Position.x = head.Position.x + math.sin(targetYRotation / avgN) * deltaSeconds * speed;	
-        head.Position.z = head.Position.z - math.cos(targetYRotation / avgN) * deltaSeconds * speed;	
-    end
-
-	Game.Local.LocalPlayer.Head = head;
-
-	torso.Position = Vector3.create(head.Position.x, 2.5, head.Position.z);
-	leftArm.Position = Vector3.create(-1.125 * math.sin(math.rad(head.Orientation.y + 90)) + head.Position.x, 2.5, -1.125 * math.cos(math.rad(head.Orientation.y + 90)) + head.Position.z);
-	rightArm.Position = Vector3.create(1.125 * math.sin(math.rad(head.Orientation.y + 90)) + head.Position.x, 2.5, 1.125 * math.cos(math.rad(head.Orientation.y + 90)) + head.Position.z);
-	leftLeg.Position = Vector3.create(-0.375 * math.sin(math.rad(head.Orientation.y + 90)) + head.Position.x, 0.8, -0.375 * math.cos(math.rad(head.Orientation.y + 90)) + head.Position.z);
-	rightLeg.Position = Vector3.create(0.375 * math.sin(math.rad(head.Orientation.y + 90)) + head.Position.x, 0.8, 0.375 * math.cos(math.rad(head.Orientation.y + 90)) + head.Position.z);
-
-	torso.Orientation = head.Orientation;
-	leftArm.Orientation = head.Orientation;
-	rightArm.Orientation = head.Orientation;
-	leftLeg.Orientation = head.Orientation;
-	rightLeg.Orientation = head.Orientation;
+		head.Position.x = head.Position.x + math.sin(targetYRotation / avgN) * deltaSeconds * speed;
+		head.Position.z = head.Position.z - math.cos(targetYRotation / avgN) * deltaSeconds * speed;
+	end
 
 	Game.Camera.Position = Vector3.create(
-        math.cos(Game.Camera.Orientation.y) * math.cos(Game.Camera.Orientation.x) * cameraDistance + head.Position.x,
-        math.sin(Game.Camera.Orientation.x) * cameraDistance + head.Position.y,
-        math.cos(Game.Camera.Orientation.x) * math.sin(Game.Camera.Orientation.y) * cameraDistance + head.Position.z
+		math.cos(Game.Camera.Orientation.y) * math.cos(Game.Camera.Orientation.x) * cameraDistance + head.Position.x,
+		math.sin(Game.Camera.Orientation.x) * cameraDistance + head.Position.y,
+		math.cos(Game.Camera.Orientation.x) * math.sin(Game.Camera.Orientation.y) * cameraDistance + head.Position.z
 	);
-	
+
+	local xori = math.sin(math.rad(head.Orientation.y + 90));
+	local zori = math.cos(math.rad(head.Orientation.y + 90));
+
+	if avgN >= 1 then
+		Game.SetPlayerWalking(true);
+		local limbTimer = math.sin(7.5 * (os.clock() - bWalkTime));
+		local limbOrientation = math.deg(math.tan(limbTimer)) * 0.75;
+
+		torso.Orientation = head.Orientation;
+		leftArm.Orientation = Vector3.create(0, head.Orientation.y + 90, limbOrientation);
+		rightArm.Orientation = Vector3.create(0, head.Orientation.y + 90, -limbOrientation);
+		leftLeg.Orientation = Vector3.create(0, head.Orientation.y + 90, -limbOrientation);
+		rightLeg.Orientation = Vector3.create(0, head.Orientation.y + 90, limbOrientation);
+
+		torso.Position = Vector3.create(head.Position.x, 2.5, head.Position.z);
+		local xpos = math.sin(math.rad(head.Orientation.y + 90));
+		local zpos = math.cos(math.rad(head.Orientation.y + 90));
+		local lxzpos = math.sin(limbTimer);
+		local lypos = math.cos(limbTimer);
+
+		local xo = math.sin(math.rad(head.Orientation.y));
+		local zo = math.cos(math.rad(head.Orientation.y));
+
+		torso.Position = Vector3.create(head.Position.x, 2.5, head.Position.z);
+		leftArm.Position = Vector3.create(-1.125 * xori - xo * lxzpos * 0.45 + head.Position.x, 2.5 - lypos * 0.40 + 0.40, -1.125 * zori - zo * lxzpos * 0.45 + head.Position.z);
+		rightArm.Position = Vector3.create(1.125 * xori + xo * lxzpos * 0.45 + head.Position.x, 2.5 - lypos * 0.40 + 0.40, 1.1250 * zori + zo * lxzpos * 0.45 + head.Position.z);
+		leftLeg.Position = Vector3.create(-0.375 * xori + xo * lxzpos * 0.40 + head.Position.x, 0.8 - lypos * 0.35 + 0.45, -0.375 * zori + zo * lxzpos * 0.40 + head.Position.z);
+		rightLeg.Position = Vector3.create(0.375 * xori - xo * lxzpos * 0.40 + head.Position.x, 0.8 - lypos * 0.35 + 0.45, 0.3750 * zori - zo * lxzpos * 0.40 + head.Position.z);
+	else
+		Game.SetPlayerWalking(false);
+		torso.Orientation = head.Orientation;
+		leftArm.Orientation = Vector3.create(0, head.Orientation.y + 90, leftArm.Orientation.z - leftArm.Orientation.z *	 	deltaSeconds * 15);
+		rightArm.Orientation = Vector3.create(0, head.Orientation.y + 90, rightArm.Orientation.z - rightArm.Orientation.z * 	deltaSeconds * 15);
+		leftLeg.Orientation = Vector3.create(0, head.Orientation.y + 90, leftLeg.Orientation.z - leftLeg.Orientation.z * 		deltaSeconds * 15);
+		rightLeg.Orientation = Vector3.create(0, head.Orientation.y + 90, rightLeg.Orientation.z - rightLeg.Orientation.z * 	deltaSeconds * 15);
+
+		local zo = math.cos(math.rad(head.Orientation.y));
+
+		torso.Position = Vector3.create(head.Position.x, 2.5, head.Position.z);
+		leftArm.Position = Vector3.create(-1.125 * xori + head.Position.x, 2.5 - math.cos(math.rad(leftArm.Orientation.z )) * 0.40 + 0.40, -1.125 * zori - zo * math.sin(math.rad(leftArm.Orientation.z )) * 0.45 + head.Position.z);
+		rightArm.Position = Vector3.create(1.125 * xori + head.Position.x, 2.5 - math.cos(math.rad(rightArm.Orientation.z)) * 0.40 + 0.40, 1.1250 * zori + zo * math.sin(math.rad(rightArm.Orientation.z)) * 0.45 + head.Position.z);
+		leftLeg.Position = Vector3.create(-0.375 * xori + head.Position.x, 0.8 - math.cos(math.rad(leftLeg.Orientation.z )) * 0.35 + 0.45, -0.375 * zori + zo * math.sin(math.rad(leftLeg.Orientation.z )) * 0.40 + head.Position.z);
+		rightLeg.Position = Vector3.create(0.375 * xori + head.Position.x, 0.8 - math.cos(math.rad(rightLeg.Orientation.z)) * 0.35 + 0.45, 0.3750 * zori - zo * math.sin(math.rad(rightLeg.Orientation.z)) * 0.40 + head.Position.z);
+		bWalkTime = os.clock();
+	end
+
+	Game.Local.LocalPlayer.Head = head;
 	Game.Camera.Orientation.y = Game.Camera.Orientation.y - halfPi;
 
 	lastFrameRtClick = Input.isDown(Input.MouseCode.Right);
